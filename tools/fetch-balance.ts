@@ -10,7 +10,7 @@ import {
 } from "../utils/types.js";
 import { LighterMCP } from "../client.js";
 
-const logger = new McpLogger("ostium-mcp", LOG_LEVELS.INFO);
+const logger = new McpLogger("lighter-mcp", LOG_LEVELS.INFO);
 
 interface LighterApiResponse {
   code: number;

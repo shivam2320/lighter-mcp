@@ -7,8 +7,9 @@ import {
   LOG_LEVELS,
 } from "../utils/types.js";
 import { LighterMCP } from "../client.js";
+import { AccountApi, ApiClient } from "lighter-ts-sdk";
 
-const logger = new McpLogger("ostium-mcp", LOG_LEVELS.INFO);
+const logger = new McpLogger("lighter-mcp", LOG_LEVELS.INFO);
 
 interface FundingRate {
   market_id: number;
@@ -38,7 +39,6 @@ async function fetchFundingRates(): Promise<FundingRate[]> {
       throw new Error("Failed to fetch funding rates");
     }
 
-    // Filter to only show lighter exchange rates
     const lighterRates = data.funding_rates.filter(
       (rate) => rate.exchange === "lighter"
     );

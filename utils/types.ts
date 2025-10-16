@@ -216,7 +216,7 @@ export interface GetHistoricalPricesResponse {
 }
 
 /**
- * Price feed data from Ostium API
+ * Price feed data from lighter API
  */
 export interface PriceFeedData {
   feed_id: string;
@@ -232,9 +232,9 @@ export interface PriceFeedData {
 }
 
 /**
- * Response from Ostium prices API
+ * Response from lighter prices API
  */
-export interface OstiumPricesResponse extends Array<PriceFeedData> {}
+export interface lighterPricesResponse extends Array<PriceFeedData> {}
 
 // export interface TokenInfo {
 //   address: Address;
@@ -559,45 +559,8 @@ export interface PnLCalculationResult {
   pnlPercentage: number;
 }
 
-// Market Order Types
-export interface CreateMarketOrderParams {
-  marketIndex: number;
-  clientOrderIndex: number;
-  baseAmount: string;
-  avgExecutionPrice: string;
-  isAsk: boolean;
-}
-
-export interface MarketOrderTransaction {
-  AccountIndex: number;
-  OrderBookIndex: number;
-  ClientOrderIndex: number;
-  BaseAmount: string;
-  Price: string;
-  IsAsk: number;
-  OrderType: number;
-  TimeInForce: number;
-  ReduceOnly: number;
-  TriggerPrice: number;
-  Nonce: number;
-  OrderExpiry: number;
-}
-
-export interface SignedMarketOrderTransaction extends MarketOrderTransaction {
-  Sig: string;
-}
-
-export interface NonceResponse {
-  nonce: number;
-}
-
-export interface TransactionApi {
-  getNextNonce(accountIndex: number, apiKeyIndex: number): Promise<NonceResponse>;
-  sendTx(txType: number, txData: string): Promise<string>;
-}
-
-export interface SignerClient {
-  ORDER_TYPE_MARKET: number;
-  ORDER_TIME_IN_FORCE_IMMEDIATE_OR_CANCEL: number;
-  TX_TYPE_CREATE_ORDER: number;
+export interface ChangeApiKeyParams {
+  ethPrivateKey: string;
+  newPubkey: string;
+  newApiKeyIndex?: number;
 }

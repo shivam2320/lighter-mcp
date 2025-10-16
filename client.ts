@@ -6,13 +6,18 @@ import { EVMWalletClient } from "@osiris-ai/web3-evm-sdk";
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { getAuthContext } from '@osiris-ai/sdk';
 import { createErrorResponse, createSuccessResponse } from './utils/types.js';
-import { createAuthTokenWithExpiry as createAuthToken } from './utils/auth.js';
 import z from 'zod';
 import { registerFetchBalancesTools } from './tools/fetch-balance.js';
 import { registerFetchFundingRatesTools } from './tools/fetch-funding-rates.js';
 import { registerFetchReferralPointsTools } from './tools/fetch-referral-points.js';
 import { registerFetchPriceTools } from './tools/fetch-price.js';
 import { registerCreateMarketOrderTools } from './tools/create-market-order.js';
+import { registerCreateLimitOrderTools } from './tools/create-limit-order.js';
+import { registerClosePositionTools } from './tools/close-position.js';
+import { registerCancelOrderTools } from './tools/cancel-order.js';
+import { registerGetPositionsTools } from './tools/get-positions.js';
+import { registerAddTpSlOrdersTools } from './tools/add-tp-sl-orders.js';
+import { registerSystemSetupTools } from './tools/system-setup.js';
 import { PublicClient, createPublicClient, http } from 'viem';
 import { base } from 'viem/chains';
 // import { base } from 'viem/chains';
@@ -30,9 +35,6 @@ export class LighterMCP {
     }) as PublicClient;
   }
 
-  async createAuthTokenWithExpiry(expiry: number, accountIndex: number): Promise<[string, string | null]> {
-    return createAuthToken(this.hubBaseUrl, this.walletToSession, expiry, accountIndex);
-  }
 
   async getUserAddresses(): Promise<CallToolResult> {
     try {
@@ -61,6 +63,7 @@ export class LighterMCP {
         addresses,
       });
     } catch (error: any) {
+      console.error("Failed to get user addresses", error);
       const errorMessage = error.message || "Failed to get user addresses";
       return createErrorResponse(errorMessage);
     }
@@ -109,6 +112,12 @@ export class LighterMCP {
     registerFetchReferralPointsTools(server, this);
     registerFetchPriceTools(server, this);
     registerCreateMarketOrderTools(server, this);
+    registerCreateLimitOrderTools(server, this);
+    registerClosePositionTools(server, this);
+    registerCancelOrderTools(server, this);
+    registerGetPositionsTools(server, this);
+    registerAddTpSlOrdersTools(server, this);
+    registerSystemSetupTools(server, this);
     server.tool(
       "getUserAddresses",
       "Get user addresses, you can choose a wallet with chooseWallet",

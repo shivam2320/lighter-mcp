@@ -10,7 +10,7 @@ import { LighterMCP } from "../client.js";
 import { pairsData } from "../utils/pairs-data.js";
 import { FetchPriceToolSchema } from "../schema/index.js";
 
-const logger = new McpLogger("ostium-mcp", LOG_LEVELS.INFO);
+const logger = new McpLogger("lighter-mcp", LOG_LEVELS.INFO);
 
 interface OrderBookOrder {
   order_index: number;

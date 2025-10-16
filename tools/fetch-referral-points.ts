@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { getAuthContext } from "@osiris-ai/sdk";
 import { EVMWalletClient } from "@osiris-ai/web3-evm-sdk";
+import { SignerClient, ApiClient } from "lighter-ts-sdk";
 import { McpLogger } from "../utils/logger.js";
 import {
   createErrorResponse,
@@ -9,8 +10,9 @@ import {
   LOG_LEVELS,
 } from "../utils/types.js";
 import { LighterMCP } from "../client.js";
+import { FetchReferralPointsToolSchema } from "../schema/index.js";
 
-const logger = new McpLogger("ostium-mcp", LOG_LEVELS.INFO);
+const logger = new McpLogger("lighter-mcp", LOG_LEVELS.INFO);
 
 interface LighterReferralPointsResponse {
   code: number;
@@ -23,36 +25,50 @@ interface LighterReferralPointsResponse {
 }
 
 async function fetchReferralPoints(
-  walletAddress: string,
-  authSignature: string,
-  accountIndex: number
+  accountIndex: number,
+  privateKey: string,
+  apiKeyIndex: number = 0
 ): Promise<{
   accountIndex: number;
   referralPoints: string;
   walletAddress: string;
 }> {
   try {
-
-
-    const referralResponse = await fetch(
-      `https://mainnet.zklighter.elliot.ai/api/v1/referral/points?account_index=${accountIndex}&auth=${authSignature}`,
-      {
-        headers: {
-          'Authorization': `${authSignature}`,
-          'accept': 'application/json'
-        }
-      }
-    );
-
-
-    if (!referralResponse.ok) {
-      throw new Error(`HTTP error! status: ${referralResponse.status}`);
+    if (!privateKey) {
+      throw new Error("Private key is required");
     }
 
-    const referralData: LighterReferralPointsResponse = await referralResponse.json();
+    const signerClient = new SignerClient({
+      url: 'https://mainnet.zklighter.elliot.ai',
+      privateKey: privateKey,
+      accountIndex: accountIndex,
+      apiKeyIndex: apiKeyIndex
+    });
+
+    await signerClient.initialize();
+    await (signerClient as any).ensureWasmClient();
+
+    const authToken = await signerClient.createAuthTokenWithExpiry(600); // 10 minutes
+
+    const apiClient = new ApiClient({
+      host: 'https://mainnet.zklighter.elliot.ai'
+    });
+
+    apiClient.setDefaultHeader('authorization', authToken);
+    apiClient.setDefaultHeader('Authorization', authToken);
+
+    const response = await apiClient.get('/api/v1/referral/points', {
+      account_index: accountIndex
+    });
+
+    const referralData: LighterReferralPointsResponse = response.data;
 
     if (referralData.code !== 200 || referralData.accounts.length === 0) {
-      throw new Error("No referral points found for the given account");
+      return {
+        accountIndex: accountIndex,
+        referralPoints: "0",
+        walletAddress: "",
+      };
     }
 
     const referralAccount = referralData.accounts[0];
@@ -64,7 +80,7 @@ async function fetchReferralPoints(
     };
   } catch (error) {
     logger.error("Failed to fetch referral points", {
-      walletAddress,
+      accountIndex,
       error: error instanceof Error ? error.message : String(error),
     });
     throw error;
@@ -80,12 +96,8 @@ export function registerFetchReferralPointsTools(
   server.tool(
     "fetch_referral_points",
     "Retrieve referral points for the current user's wallet address from Lighter protocol. Returns the referral points earned by the user.",
-    {
-      type: "object",
-      properties: {},
-      required: [],
-    },
-    async (): Promise<CallToolResult> => {
+    FetchReferralPointsToolSchema,
+    async ({ private_key, api_key_index = 0 }): Promise<CallToolResult> => {
       try {
         const { token, context } = getAuthContext("osiris");
         if (!token || !context) {
@@ -116,7 +128,6 @@ export function registerFetchReferralPointsTools(
 
         logger.toolCalled("fetch_referral_points", { walletAddress });
 
-        // First fetch account data to get accountIndex
         const accountResponse = await fetch(
           `https://mainnet.zklighter.elliot.ai/api/v1/account?by=l1_address&value=${walletAddress}`
         );
@@ -134,18 +145,19 @@ export function registerFetchReferralPointsTools(
         const accountInfo = accountData.accounts[0];
         const accountIndex = accountInfo.index;
 
-        const [authSignature, authError] = await lighterMCP.createAuthTokenWithExpiry(360000, accountIndex); 
+        const referralPoints = await fetchReferralPoints(accountIndex, private_key, api_key_index);
 
-        if (authError || !authSignature) {
-          return createErrorResponse(authError || "Failed to create authentication signature");
-        }
-
-        const referralPoints = await fetchReferralPoints(walletAddress, authSignature, accountIndex);
+        const finalWalletAddress = referralPoints.walletAddress || walletAddress;
 
         const formattedReferralPoints = {
-          walletAddress: referralPoints.walletAddress,
+          referrals: [],
+          user_total_points: parseInt(referralPoints.referralPoints) || 0,
+          user_last_week_points: 0,
+          user_total_referral_reward_points: parseInt(referralPoints.referralPoints) || 0,
+          user_last_week_referral_reward_points: 0,
+          reward_point_multiplier: "0.1000",
+          walletAddress: finalWalletAddress,
           accountIndex: referralPoints.accountIndex,
-          referralPoints: referralPoints.referralPoints,
           lastUpdated: new Date().toISOString(),
         };
 
