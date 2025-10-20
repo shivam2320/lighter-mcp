@@ -15,11 +15,11 @@ export function registerWithdrawTools(
   server: McpServer,
   lighterMCP: LighterMCP
 ): void {
-  logger.info("🏧 Registering withdraw tools...");
+  logger.info("🏧 Registering withdraw ethereum tools...");
 
   server.tool(
-    "withdraw",
-    "Withdraw USDC from Lighter using SignerClient (amount is human USDC, 6 decimals)",
+    "withdraw-ethereum",
+    "Withdraw Ethereum from Lighter using SignerClient (amount is human USDC, 6 decimals)",
     WithdrawToolSchema,
     async ({ amount, private_key, api_key_index = 0 }): Promise<CallToolResult> => {
       try {
@@ -91,7 +91,7 @@ export function registerWithdrawTools(
           return createErrorResponse(`Transaction failed to confirm: ${tx.status}`);
         }
 
-        logger.toolCompleted("withdraw");
+        logger.toolCompleted("withdraw-ethereum");
         return createSuccessResponse(
           `✅ Withdraw submitted successfully`,
           { txHash, withdrawInfo, amount: humanAmount }
@@ -102,7 +102,7 @@ export function registerWithdrawTools(
     }
   );
 
-  logger.info("✅ Withdraw tools registered successfully");
+  logger.info("✅ Withdraw ethereum tools registered successfully");
 }
 
 

@@ -19,7 +19,8 @@ import { registerGetPositionsTools } from './tools/get-positions.js';
 import { registerAddTpSlOrdersTools } from './tools/add-tp-sl-orders.js';
 import { registerSystemSetupTools } from './tools/system-setup.js';
 import { registerDepositTools } from './tools/deposit.js';
-import { registerWithdrawTools } from './tools/withdraw.js';
+import { registerDepositEthereumTools } from './tools/deposit-ethereum.js';
+import { registerWithdrawTools } from './tools/withdraw-ethereum.js';
 import { PublicClient, createPublicClient, erc20Abi, http, parseUnits } from 'viem';
 import { arbitrum } from 'viem/chains';
 import { createWalletClient, serializeTransaction, encodeFunctionData } from 'viem';
@@ -205,6 +206,7 @@ export class LighterMCP {
     registerAddTpSlOrdersTools(server, this);
     registerSystemSetupTools(server, this);
     registerDepositTools(server, this);
+    registerDepositEthereumTools(server, this);
     registerWithdrawTools(server, this);
     server.tool(
       "getUserAddresses",

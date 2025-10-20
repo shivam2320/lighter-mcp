@@ -70,4 +70,9 @@ export const WithdrawToolSchema = {
   api_key_index: z.number().min(0).default(0).describe("API key index for the transaction (defaults to 0)"),
 };
 
+export const DepositEthereumToolSchema = {
+  amount: z.string().describe("Ethereum amount to deposit (in ETH)"),
+  address: z.string().describe("User address to deposit to"),
+};
+
 
