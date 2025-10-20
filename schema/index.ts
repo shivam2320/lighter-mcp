@@ -60,4 +60,14 @@ export const AddTpSlOrdersToolSchema = {
   api_key_index: z.number().min(0).default(0).describe("API key index for the transaction (defaults to 0)"),
 };
 
+export const DepositToolSchema = {
+  amount: z.string().describe("USDC amount to deposit"),
+};
+
+export const WithdrawToolSchema = {
+  amount: z.string().describe("USDC amount to withdraw)"),
+  private_key: z.string().min(1).describe("Private key for signing the transaction"),
+  api_key_index: z.number().min(0).default(0).describe("API key index for the transaction (defaults to 0)"),
+};
+
 

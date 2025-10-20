@@ -18,9 +18,12 @@ import { registerCancelOrderTools } from './tools/cancel-order.js';
 import { registerGetPositionsTools } from './tools/get-positions.js';
 import { registerAddTpSlOrdersTools } from './tools/add-tp-sl-orders.js';
 import { registerSystemSetupTools } from './tools/system-setup.js';
-import { PublicClient, createPublicClient, http } from 'viem';
-import { base } from 'viem/chains';
-// import { base } from 'viem/chains';
+import { registerDepositTools } from './tools/deposit.js';
+import { registerWithdrawTools } from './tools/withdraw.js';
+import { PublicClient, createPublicClient, erc20Abi, http, parseUnits } from 'viem';
+import { arbitrum } from 'viem/chains';
+import { createWalletClient, serializeTransaction, encodeFunctionData } from 'viem';
+import { USDC_CONTRACT_ADDRESS, LIGHTER_DEPOSIT_CONTRACT_ADDRESS } from './utils/constants.js';
 
 export class LighterMCP {
   public hubBaseUrl: string;
@@ -30,7 +33,7 @@ export class LighterMCP {
   constructor(hubBaseUrl: string) {
     this.hubBaseUrl = hubBaseUrl;
     this.publicClient = createPublicClient({
-      chain: base,
+      chain: arbitrum,
       transport: http(),
     }) as PublicClient;
   }
@@ -103,6 +106,89 @@ export class LighterMCP {
     }
   }
 
+  async withdraw(amount: string, retry = false): Promise<CallToolResult> {
+
+		try {
+			const { token, context } = getAuthContext("osiris");
+			if (!token || !context) {
+				throw new Error("No token or context found");
+			}
+
+			const wallet = this.walletToSession[context.sessionId];
+			if (!wallet) {
+				throw new Error(
+					"No wallet found, you need to choose a wallet first with chooseWallet"
+				);
+			}
+
+			const client = new EVMWalletClient(
+				this.hubBaseUrl,
+				token.access_token,
+				context.deploymentId
+			);
+
+			const account = await client.getViemAccount(wallet, "evm:eip155:42161");
+			if (!account) {
+				throw new Error(
+					"No account found, you need to choose a wallet first with chooseWallet"
+				);
+			}
+
+			const walletClient = createWalletClient({
+				account: account,
+				chain: arbitrum,
+				transport: http(),
+			});
+
+			let serializedTransaction: any;
+
+				const preparedTx = await walletClient.prepareTransactionRequest({
+					to: USDC_CONTRACT_ADDRESS,
+					abi: erc20Abi,
+					functionName: "transfer",
+					args: [LIGHTER_DEPOSIT_CONTRACT_ADDRESS, parseUnits(amount, 6)],
+					gas: 800000n,
+				});
+				serializedTransaction = serializeTransaction({
+					...preparedTx,
+					data: encodeFunctionData({
+						abi: erc20Abi,
+						functionName: "transfer",
+						args: [LIGHTER_DEPOSIT_CONTRACT_ADDRESS as `0x${string}`, parseUnits(amount, 6)],
+					}),
+				} as any);
+			
+			const signedTx = await client.signTransaction(
+				erc20Abi,
+				serializedTransaction,
+				"evm:eip155:42161",
+				account.address
+			);
+			const hash = await walletClient.sendRawTransaction({
+				serializedTransaction: signedTx as `0x${string}`,
+			});
+
+			const receipt = await this.publicClient.waitForTransactionReceipt({
+				hash: hash,
+			});
+
+			if (receipt.status !== "success") {
+				throw new Error(`Transaction failed with status: ${receipt.status}`);
+			}
+
+			return createSuccessResponse("Successfully withdrew token", {
+				hash: hash,
+				amount: amount,
+				receipt: receipt,
+			});
+		} catch (error: any) {
+			if (retry) {
+				throw new Error(error.message || "Failed to withdraw token, and failed to refresh token, reauthenticate with this MCP");
+			}
+			throw new Error(error.message || "Failed to withdraw token");
+		}
+	}
+
   configureServer(server: McpServer): void {
     registerHelloTool(server);
     registerHelloPrompt(server);
@@ -118,6 +204,8 @@ export class LighterMCP {
     registerGetPositionsTools(server, this);
     registerAddTpSlOrdersTools(server, this);
     registerSystemSetupTools(server, this);
+    registerDepositTools(server, this);
+    registerWithdrawTools(server, this);
     server.tool(
       "getUserAddresses",
       "Get user addresses, you can choose a wallet with chooseWallet",
