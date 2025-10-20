@@ -27,6 +27,14 @@ function getMarketIdFromTicker(ticker: string): number {
   return pairData.market_id;
 }
 
+function getScalesForTicker(ticker: string): { priceScale: number; amountScale: number } {
+  const upperTicker = ticker.toUpperCase();
+  const pairData = pairsData[upperTicker as keyof typeof pairsData] as any;
+  const priceScale = pairData?.price_scale ?? 1000;
+  const amountScale = pairData?.amount_scale ?? 1000;
+  return { priceScale, amountScale };
+}
+
 export function registerCreateLimitOrderTools(
   server: McpServer,
   lighterMCP: LighterMCP
@@ -107,6 +115,10 @@ export function registerCreateLimitOrderTools(
           market_index
         });
 
+        const { priceScale, amountScale } = getScalesForTicker(ticker);
+        const scaledPrice = Math.floor(price * priceScale);
+        const scaledBaseAmount = Math.floor(base_amount * amountScale);
+
         // Get account index from wallet address
         const accountResponse = await fetch(
           `https://mainnet.zklighter.elliot.ai/api/v1/account?by=l1_address&value=${walletAddress}`
@@ -151,8 +163,8 @@ export function registerCreateLimitOrderTools(
         const [tx, txHash, err] = await signerClient.createOrder({
           marketIndex: market_index,
           clientOrderIndex: client_order_index,
-          baseAmount: base_amount,
-          price: price,
+          baseAmount: scaledBaseAmount,
+          price: scaledPrice,
           isAsk: is_ask,
           timeInForce: SignerClient.ORDER_TIME_IN_FORCE_GOOD_TILL_TIME
         });
@@ -170,19 +182,21 @@ export function registerCreateLimitOrderTools(
           ticker: ticker.toUpperCase(),
           marketIndex: market_index,
           clientOrderIndex: client_order_index,
-          baseAmount: base_amount,
-          price: price,
+          baseAmount: scaledBaseAmount,
+          price: scaledPrice,
           isAsk: is_ask,
           leverage: leverage,
           orderType: "LIMIT",
           timeInForce: "GOOD_TILL_TIME",
           status: "SUBMITTED",
           timestamp: new Date().toISOString(),
+          priceScale,
+          amountScale
         };
 
         logger.toolCompleted("create_limit_order");
         return createSuccessResponse(
-          `✅ Limit order created successfully for ${ticker.toUpperCase()} at ${price} cents! Transaction Hash: ${txHash}`,
+          `✅ Limit order created successfully for ${ticker.toUpperCase()} at ${scaledPrice} scaled units (scale ${priceScale}). Transaction Hash: ${txHash}`,
           orderDetails
         );
       } catch (error) {

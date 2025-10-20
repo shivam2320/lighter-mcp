@@ -27,6 +27,14 @@ function getMarketIdFromTicker(ticker: string): number {
   return pairData.market_id;
 }
 
+function getScalesForTicker(ticker: string): { priceScale: number; amountScale: number } {
+  const upperTicker = ticker.toUpperCase();
+  const pairData = pairsData[upperTicker as keyof typeof pairsData] as any;
+  const priceScale = pairData?.price_scale ?? 1000;
+  const amountScale = pairData?.amount_scale ?? 1000;
+  return { priceScale, amountScale };
+}
+
 interface OrderBookOrder {
   order_index: number;
   order_id: string;
@@ -120,11 +128,11 @@ export function registerCreateMarketOrderTools(
 
   server.tool(
     "create_market_order",
-    "Create and execute a market order on the Lighter protocol using SignerClient from lighter-ts-sdk. This tool creates a market order transaction, signs it, and submits it to the blockchain.",
+    "Create and execute a market order on the Lighter protocol using SignerClient from lighter-ts-sdk. This tool creates a market order transaction with USD position margin, signs it, and submits it to the blockchain.",
     CreateMarketOrderToolSchema,
     async ({
       ticker,
-      base_amount,
+      usd_amount,
       is_ask,
       leverage = 10,
       private_key,
@@ -160,7 +168,7 @@ export function registerCreateMarketOrderTools(
         
         logger.info("Received parameters", { 
           ticker, 
-          base_amount,
+          usd_amount,
           is_ask,
           leverage,
           walletAddress,
@@ -176,7 +184,7 @@ export function registerCreateMarketOrderTools(
         logger.toolCalled("create_market_order", {
           ticker,
           client_order_index,
-          base_amount,
+          usd_amount,
           is_ask,
           walletAddress,
           api_key_index,
@@ -189,17 +197,32 @@ export function registerCreateMarketOrderTools(
           market_index
         });
 
+        let multiplier = is_ask ? 0.995 : 1.005;
+
         const priceData = await fetchOrderBookPrice(market_index);
-        const avg_execution_price = Math.floor(parseFloat(priceData.price) * 100); // Convert to cents
-        console.log("avg_execution_price", avg_execution_price);
+        const originalPrice = parseFloat(priceData.price);
+        const adjustedPrice = originalPrice * multiplier; 
+        const { priceScale, amountScale } = getScalesForTicker(ticker);
+        const avg_execution_price = Math.floor(adjustedPrice * priceScale); 
+        console.log("original_price", originalPrice, "adjusted_price", adjustedPrice, "avg_execution_price", avg_execution_price);
         
-        logger.info("Fetched current market price", {
+        const effective_position_value = usd_amount * leverage;
+        const base_amount_unscaled = (effective_position_value / adjustedPrice);
+        const base_amount = Math.floor(base_amount_unscaled * amountScale);
+        
+        logger.info("Fetched current market price and calculated base amount", {
           ticker,
-          marketPrice: priceData.price,
-          avgExecutionPrice: avg_execution_price
+          originalPrice: originalPrice,
+          adjustedPrice: adjustedPrice,
+          avgExecutionPrice: avg_execution_price,
+          usdAmount: usd_amount,
+          leverage: leverage,
+          effectivePositionValue: effective_position_value,
+          calculatedBaseAmount: base_amount,
+          priceScale,
+          amountScale
         });
 
-        // Get account index from wallet address
         const accountResponse = await fetch(
           `https://mainnet.zklighter.elliot.ai/api/v1/account?by=l1_address&value=${walletAddress}`
         );
@@ -262,11 +285,14 @@ export function registerCreateMarketOrderTools(
           ticker: ticker.toUpperCase(),
           marketIndex: market_index,
           clientOrderIndex: client_order_index,
+          usdAmount: usd_amount,
+          leverage: leverage,
+          effectivePositionValue: effective_position_value,
           baseAmount: base_amount,
-          marketPrice: priceData.price,
+          originalPrice: originalPrice,
+          adjustedPrice: adjustedPrice,
           avgExecutionPrice: avg_execution_price,
           isAsk: is_ask,
-          leverage: leverage,
           orderType: "MARKET",
           timeInForce: "IMMEDIATE_OR_CANCEL",
           status: "SUBMITTED",
@@ -275,7 +301,7 @@ export function registerCreateMarketOrderTools(
 
         logger.toolCompleted("create_market_order");
         return createSuccessResponse(
-          `✅ Market order created successfully for ${ticker.toUpperCase()} at ${priceData.price} USDC! Transaction Hash: ${txHash}`,
+          `✅ Market order created successfully for ${ticker.toUpperCase()} with $${usd_amount} USD position margin (${leverage}x leverage, $${effective_position_value} effective position) at $${adjustedPrice.toFixed(2)} USDC (adjusted from $${originalPrice.toFixed(2)})! Transaction Hash: ${txHash}`,
           orderDetails
         );
       } catch (error) {

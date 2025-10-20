@@ -6,6 +6,8 @@ export const pairsData = {
       "trades_24h": 967568,
       "price_change_24h": 8.991700734075177,
       "min_size": "0.0050",
+      "amount_scale": 10000,
+      "price_scale": 100,
       "status": "active"
     },
     "BTC": {
@@ -15,6 +17,8 @@ export const pairsData = {
       "trades_24h": 1668119,
       "price_change_24h": 3.141400167443443,
       "min_size": "0.00020",
+      "amount_scale": 100000,
+      "price_scale": 10,
       "status": "active"
     },
     "SOL": {
@@ -24,6 +28,8 @@ export const pairsData = {
       "trades_24h": 269074,
       "price_change_24h": 9.240975264000177,
       "min_size": "0.050",
+      "amount_scale": 1000,
+      "price_scale": 1000,
       "status": "active"
     },
     "DOGE": {
@@ -33,6 +39,8 @@ export const pairsData = {
       "trades_24h": 17910,
       "price_change_24h": 12.179758852323536,
       "min_size": "10",
+      "amount_scale": 100,
+      "price_scale": 10000,
       "status": "active"
     },
     "1000PEPE": {
@@ -42,6 +50,8 @@ export const pairsData = {
       "trades_24h": 3787,
       "price_change_24h": 13.049940546967896,
       "min_size": "500",
+      "amount_scale": 10,
+      "price_scale": 100000,
       "status": "active"
     },
     "WIF": {
@@ -51,6 +61,8 @@ export const pairsData = {
       "trades_24h": 4307,
       "price_change_24h": 17.90758718386734,
       "min_size": "5.0",
+      "amount_scale": 10,
+      "price_scale": 100000,
       "status": "active"
     },
     "WLD": {
@@ -60,6 +72,8 @@ export const pairsData = {
       "trades_24h": 3895,
       "price_change_24h": 10.758632890677694,
       "min_size": "5.0",
+      "amount_scale": 10,
+      "price_scale": 100000,
       "status": "active"
     },
     "XRP": {
@@ -69,6 +83,8 @@ export const pairsData = {
       "trades_24h": 30187,
       "price_change_24h": 10.202554407523438,
       "min_size": "20",
+      "amount_scale": 1,
+      "price_scale": 1000000,
       "status": "active"
     },
     "LINK": {
@@ -78,6 +94,8 @@ export const pairsData = {
       "trades_24h": 8011,
       "price_change_24h": 12.931077241797752,
       "min_size": "1.0",
+      "amount_scale": 10,
+      "price_scale": 100000,
       "status": "active"
     },
     "AVAX": {
@@ -87,6 +105,8 @@ export const pairsData = {
       "trades_24h": 7718,
       "price_change_24h": 8.699255533486705,
       "min_size": "0.50",
+      "amount_scale": 100,
+      "price_scale": 10000,
       "status": "active"
     },
     "NEAR": {
@@ -96,6 +116,8 @@ export const pairsData = {
       "trades_24h": 2783,
       "price_change_24h": 10.525879121598903,
       "min_size": "2.0",
+      "amount_scale": 10,
+      "price_scale": 100000,
       "status": "active"
     },
     "DOT": {
@@ -105,6 +127,8 @@ export const pairsData = {
       "trades_24h": 2115,
       "price_change_24h": 10.948133069907602,
       "min_size": "2.0",
+      "amount_scale": 10,
+      "price_scale": 100000,
       "status": "active"
     },
     "TON": {
@@ -114,6 +138,8 @@ export const pairsData = {
       "trades_24h": 4268,
       "price_change_24h": 8.964471689407421,
       "min_size": "2.0",
+      "amount_scale": 10,
+      "price_scale": 100000,
       "status": "active"
     },
     "TAO": {
@@ -123,6 +149,8 @@ export const pairsData = {
       "trades_24h": 8460,
       "price_change_24h": 31.23662488535616,
       "min_size": "0.050",
+      "amount_scale": 1000,
+      "price_scale": 100,
       "status": "active"
     },
     "POL": {
@@ -132,6 +160,8 @@ export const pairsData = {
       "trades_24h": 2063,
       "price_change_24h": 8.035132169681807,
       "min_size": "40",
+      "amount_scale": 1,
+      "price_scale": 1000000,
       "status": "active"
     },
     "TRUMP": {

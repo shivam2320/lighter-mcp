@@ -27,6 +27,14 @@ function getMarketIdFromTicker(ticker: string): number {
   return pairData.market_id;
 }
 
+function getScalesForTicker(ticker: string): { priceScale: number; amountScale: number } {
+  const upperTicker = ticker.toUpperCase();
+  const pairData = pairsData[upperTicker as keyof typeof pairsData] as any;
+  const priceScale = pairData?.price_scale ?? 1000;
+  const amountScale = pairData?.amount_scale ?? 1000;
+  return { priceScale, amountScale };
+}
+
 export function registerClosePositionTools(
   server: McpServer,
   lighterMCP: LighterMCP
@@ -160,8 +168,10 @@ export function registerClosePositionTools(
         const positionSize = Math.abs(parseFloat(positionToClose.position));
         const avgPrice = Math.abs(parseFloat(positionToClose.avg_entry_price));
 
-        const baseAmount = Math.floor(positionSize * 1000000);
-        const priceInUnits = Math.floor(avgPrice * 100000);
+        const { priceScale, amountScale } = getScalesForTicker(ticker);
+        const baseAmount = Math.floor(positionSize * amountScale);
+        const multiplier = isLong ? 0.995 : 1.005; // favor fill on market close
+        const priceInUnits = Math.floor(avgPrice * multiplier * priceScale);
 
         logger.info(`Closing ${isLong ? 'LONG' : 'SHORT'} position: ${positionSize} units at ${avgPrice} avg price`);
 
@@ -169,14 +179,19 @@ export function registerClosePositionTools(
           marketIndex: market_index,
           clientOrderIndex: client_order_index,
           baseAmount: baseAmount,
-          avgExecutionPrice: priceInUnits * 2, 
+          avgExecutionPrice: priceInUnits, 
           isAsk: isLong,
           reduceOnly: true
         });
 
         const confirmedTx = await signerClient.waitForTransaction(txHash, 60000, 2000);
 
-        if (confirmedTx.status !== "confirmed") {
+        const isConfirmed = (
+          confirmedTx.status === (SignerClient as any).TX_STATUS_EXECUTED ||
+          confirmedTx.status === (SignerClient as any).TX_STATUS_COMMITTED
+        );
+
+        if (!isConfirmed) {
           return createErrorResponse(`Transaction failed to confirm: ${confirmedTx.status}`);
         }
 

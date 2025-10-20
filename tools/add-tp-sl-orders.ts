@@ -27,6 +27,14 @@ function getMarketIdFromTicker(ticker: string): number {
   return pairData.market_id;
 }
 
+function getScalesForTicker(ticker: string): { priceScale: number; amountScale: number } {
+  const upperTicker = ticker.toUpperCase();
+  const pairData = pairsData[upperTicker as keyof typeof pairsData] as any;
+  const priceScale = pairData?.price_scale ?? 1000;
+  const amountScale = pairData?.amount_scale ?? 1000;
+  return { priceScale, amountScale };
+}
+
 export function registerAddTpSlOrdersTools(
   server: McpServer,
   lighterMCP: LighterMCP
@@ -169,18 +177,24 @@ export function registerAddTpSlOrdersTools(
           orders: []
         };
 
+        const { priceScale, amountScale } = getScalesForTicker(ticker);
+        const baseAmount = Math.floor(Math.abs(positionSize) * amountScale);
+
         if (take_profit_price && take_profit_price > 0) {
           logger.info("📈 Creating Take Profit Limit Order...");
           
           const tpIsAsk = isLongPosition;
           
+          const tpTrigger = Math.floor(take_profit_price * priceScale);
+          const tpLimit = tpTrigger;
+
           const [tpTx, tpTxHash, tpErr] = await signerClient.createTpLimitOrder(
             market_index,
             client_order_index,
-            positionSize,
-            take_profit_price, 
-            take_profit_price, 
-            isLongPosition, 
+            baseAmount,
+            tpTrigger, 
+            tpLimit, 
+            tpIsAsk, 
             true 
           );
 
@@ -193,7 +207,7 @@ export function registerAddTpSlOrdersTools(
             type: "TAKE_PROFIT",
             transaction: tpTx,
             transactionHash: tpTxHash,
-            price: take_profit_price,
+            price: tpLimit,
             isAsk: tpIsAsk,
             status: "SUBMITTED"
           });
@@ -207,13 +221,16 @@ export function registerAddTpSlOrdersTools(
           
           const slIsAsk = isLongPosition;
           
+          const slTrigger = Math.floor(stop_loss_price * priceScale);
+          const slLimit = slTrigger;
+
           const [slTx, slTxHash, slErr] = await signerClient.createSlLimitOrder(
             market_index,
             client_order_index + 1,
-            positionSize,
-            stop_loss_price, 
-            stop_loss_price, 
-            isLongPosition, 
+            baseAmount,
+            slTrigger, 
+            slLimit, 
+            slIsAsk, 
             true 
           );
 
@@ -226,7 +243,7 @@ export function registerAddTpSlOrdersTools(
             type: "STOP_LOSS",
             transaction: slTx,
             transactionHash: slTxHash,
-            price: stop_loss_price,
+            price: slLimit,
             isAsk: slIsAsk,
             status: "SUBMITTED"
           });

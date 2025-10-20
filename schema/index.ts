@@ -20,7 +20,7 @@ export const FetchReferralPointsToolSchema = {
 
 export const CreateMarketOrderToolSchema = {
   ticker: z.string().describe("The ticker symbol for the market (e.g., ETH, BTC, SOL, DOGE)"),
-  base_amount: z.number().positive().describe("The base amount for the order"),
+  usd_amount: z.number().positive().describe("The USD amount (position margin) for the order"),
   is_ask: z.boolean().describe("Whether this is an ask (sell) order (true) or bid (buy) order (false)"),
   leverage: z.number().min(1).max(100).default(10).describe("Leverage for the order (1-100, default: 10)"),
   private_key: z.string().min(1).describe("Private key for signing the transaction"),
