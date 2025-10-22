@@ -24,8 +24,22 @@ async function start(): Promise<void> {
       port,
       mcpPath: '/mcp',
       callbackBasePath: '/callback',
-      baseUrl: 'http://localhost:3000',
+      baseUrl: process.env.NODE_ENV === "production"
+          ? "https://lighter-mcp.osirislabs.xyz"
+          : "http://localhost:3000",
       logger: (m: string) => console.log(m),
+      corsOptions: {
+        origin: "*",
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: [
+          "Content-Type",
+          "Authorization",
+          "X-Requested-With",
+          "Accept",
+          "Origin",
+        ],
+      },
     },
     configure: (s: McpServer) => lighter.configureServer(s),
   });
