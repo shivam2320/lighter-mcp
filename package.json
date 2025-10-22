@@ -23,7 +23,7 @@
     "@modelcontextprotocol/sdk": "^1.11.4",
     "@noble/curves": "^1.9.2",
     "@osiris-ai/postgres-sdk": "^0.1.1",
-    "@osiris-ai/sdk": "^0.1.8",
+    "@osiris-ai/sdk": "^0.1.10",
     "@osiris-ai/web3-evm-sdk": "^0.1.1",
     "dotenv": "^16.3.1",
     "lighter-ts-sdk": "^1.0.5",
